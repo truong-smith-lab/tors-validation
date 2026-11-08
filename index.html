@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TORS Extraction Validation</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0d6a5b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="TORS Check">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+<style>
+
+/* Layout: one column, phone first. Sticky header (progress), rationale card, item cards, missed section, sticky footer nav. */
+:root {
+  --bg: #f3f5f4;
+  --surface: #ffffff;
+  --ink: #17221f;
+  --muted: #5d6b67;
+  --line: #d6dedb;
+  --accent: #0d6a5b;
+  --accent-ink: #ffffff;
+  --accent-soft: #dcefe9;
+  --good: #1f7a3d;
+  --good-soft: #e1f2e6;
+  --bad: #b3261e;
+  --bad-soft: #fbe5e3;
+  --warn: #8a5a00;
+  --warn-soft: #fbf0d9;
+  --hl1: #ffe08a; --hl2: #b9e1ff; --hl3: #ffc9d6; --hl4: #c9f0b5; --hl5: #e3d1ff; --hl6: #ffd3a8;
+  --font-ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-read: "Source Serif 4", Georgia, "Times New Roman", serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1513; --surface: #18201e; --ink: #e5ece9; --muted: #9aa9a4; --line: #2c3835;
+    --accent: #4fc2a8; --accent-ink: #062b23; --accent-soft: #173a33;
+    --good: #6fd38f; --good-soft: #17301f; --bad: #ff8a80; --bad-soft: #3a1b19; --warn: #f0c060; --warn-soft: #33290f;
+    --hl1: #6b5512; --hl2: #1d4a6b; --hl3: #6b2a3c; --hl4: #2f5a20; --hl5: #4a3570; --hl6: #6e4318;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1513; --surface: #18201e; --ink: #e5ece9; --muted: #9aa9a4; --line: #2c3835;
+  --accent: #4fc2a8; --accent-ink: #062b23; --accent-soft: #173a33;
+  --good: #6fd38f; --good-soft: #17301f; --bad: #ff8a80; --bad-soft: #3a1b19; --warn: #f0c060; --warn-soft: #33290f;
+  --hl1: #6b5512; --hl2: #1d4a6b; --hl3: #6b2a3c; --hl4: #2f5a20; --hl5: #4a3570; --hl6: #6e4318;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-ui); font-size: 16px; line-height: 1.45; }
+html { scroll-padding-top: 130px; scroll-padding-bottom: 110px; }
+button { font: inherit; color: inherit; }
+button:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.wrap { max-width: 720px; margin: 0 auto; padding: 0 16px; }
+
+header.top { position: sticky; top: 0; z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); }
+.top .row1 { display: flex; align-items: center; gap: 8px; padding: 10px 0 6px; }
+.top h1 { font-size: 15px; font-weight: 600; margin: 0; flex: 1; text-wrap: balance; }
+.save { font-size: 12px; padding: 3px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--ink); white-space: nowrap; }
+.save.warn { background: var(--warn-soft); color: var(--warn); }
+.save.bad { background: var(--bad-soft); color: var(--bad); }
+.iconbtn { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 6px 10px; font-size: 13px; cursor: pointer; }
+.tabs { display: flex; gap: 6px; padding-bottom: 8px; overflow-x: auto; }
+.tab { border: 1px solid var(--line); background: var(--bg); border-radius: 999px; padding: 5px 12px; font-size: 13px; cursor: pointer; white-space: nowrap; }
+.tab[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.progress { display: flex; align-items: center; gap: 10px; padding-bottom: 10px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.bar { flex: 1; height: 6px; background: var(--line); border-radius: 999px; overflow: hidden; }
+.bar > span { display: block; height: 100%; background: var(--accent); width: 0; transition: width .3s; }
+
+main.wrap { padding: 14px 16px 24px; display: grid; gap: 14px; }
+.banner { border-radius: 10px; padding: 10px 12px; font-size: 14px; background: var(--warn-soft); color: var(--warn); }
+.banner.info { background: var(--accent-soft); color: var(--ink); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 10px; }
+.idrow { display: flex; align-items: center; gap: 8px; }
+.vid { font-weight: 600; font-size: 18px; font-variant-numeric: tabular-nums; }
+.chip { font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+.chip.done { background: var(--good-soft); color: var(--good); border-color: transparent; }
+.chip.part { background: var(--warn-soft); color: var(--warn); border-color: transparent; }
+.label { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+.question { font-size: 14px; color: var(--muted); }
+.question.clamp { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.linkbtn { background: none; border: none; padding: 0; color: var(--accent); font-size: 13px; cursor: pointer; justify-self: start; text-decoration: underline; }
+.rationale { font-family: var(--font-read); font-size: 18px; line-height: 1.6; max-width: 65ch; }
+mark { color: inherit; border-radius: 3px; padding: 0 1px; }
+mark sup { font-family: var(--font-ui); font-size: 10px; font-weight: 600; margin-left: 1px; }
+.h1 { background: var(--hl1); } .h2 { background: var(--hl2); } .h3 { background: var(--hl3); }
+.h4 { background: var(--hl4); } .h5 { background: var(--hl5); } .h6 { background: var(--hl6); }
+.hint { font-size: 13px; color: var(--muted); }
+
+.item { border-left: 6px solid var(--line); }
+.item.c1 { border-left-color: var(--hl1); } .item.c2 { border-left-color: var(--hl2); } .item.c3 { border-left-color: var(--hl3); }
+.item.c4 { border-left-color: var(--hl4); } .item.c5 { border-left-color: var(--hl5); } .item.c6 { border-left-color: var(--hl6); }
+.itemhead { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.num { font-weight: 600; font-variant-numeric: tabular-nums; }
+.catbtn { border: 1px solid var(--line); background: var(--bg); border-radius: 999px; padding: 3px 10px; font-size: 13px; cursor: pointer; }
+.critique { font-size: 15px; }
+.quote { font-family: var(--font-read); font-size: 15px; color: var(--muted); border-left: 2px solid var(--line); padding-left: 10px; }
+.qrow { display: grid; gap: 6px; }
+.qtext { font-size: 14px; font-weight: 500; }
+.yn { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.yn button { border: 1.5px solid var(--line); background: var(--surface); border-radius: 10px; padding: 10px 0; font-size: 15px; font-weight: 500; cursor: pointer; min-height: 44px; }
+.yn button[aria-pressed="true"].yes { background: var(--good-soft); border-color: var(--good); color: var(--good); }
+.yn button[aria-pressed="true"].no { background: var(--bad-soft); border-color: var(--bad); color: var(--bad); }
+.yn button:disabled { opacity: .4; cursor: not-allowed; }
+.na { font-size: 13px; color: var(--muted); font-style: italic; }
+
+.stepper { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.stepper button { border: 1.5px solid var(--line); background: var(--surface); border-radius: 10px; min-width: 44px; min-height: 44px; font-size: 20px; cursor: pointer; }
+.stepper .count { font-size: 22px; font-weight: 600; min-width: 2ch; text-align: center; font-variant-numeric: tabular-nums; }
+.stepper .none { font-size: 15px; padding: 0 14px; }
+.stepper .none[aria-pressed="true"] { background: var(--good-soft); border-color: var(--good); color: var(--good); }
+textarea { width: 100%; min-height: 90px; border: 1.5px solid var(--line); border-radius: 10px; padding: 10px; font: inherit; font-size: 15px; background: var(--surface); color: var(--ink); resize: vertical; }
+.need { font-size: 13px; color: var(--warn); }
+
+footer.nav { position: sticky; bottom: 0; z-index: 5; background: var(--surface); border-top: 1px solid var(--line); padding: 10px 0 calc(10px + env(safe-area-inset-bottom)); }
+footer .wrap { display: grid; grid-template-columns: auto auto 1fr; gap: 8px; }
+footer button { border: 1.5px solid var(--line); background: var(--surface); border-radius: 10px; padding: 10px 14px; font-size: 15px; cursor: pointer; min-height: 46px; }
+footer .primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+
+dialog { border: none; border-radius: 14px; padding: 0; max-width: 640px; width: calc(100% - 24px); background: var(--surface); color: var(--ink); }
+dialog::backdrop { background: rgba(0,0,0,.45); }
+.dlg { padding: 18px; display: grid; gap: 12px; max-height: 80vh; overflow-y: auto; }
+.dlg h2 { margin: 0; font-size: 18px; text-wrap: balance; }
+.dlg p, .dlg li { font-size: 15px; margin: 0; }
+.dlg ol, .dlg ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.dlg .close { justify-self: end; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; }
+.grid button { border: 1.5px solid var(--line); background: var(--surface); border-radius: 8px; padding: 8px 0; font-size: 13px; cursor: pointer; font-variant-numeric: tabular-nums; }
+.grid button.done { background: var(--good-soft); border-color: var(--good); color: var(--good); }
+.grid button.part { background: var(--warn-soft); border-color: var(--warn); color: var(--warn); }
+.grid button.cur { outline: 2px solid var(--accent); }
+.defs dt { font-weight: 600; font-size: 15px; }
+.defs dd { margin: 2px 0 10px 0; font-size: 14px; color: var(--muted); }
+.owner { font-size: 14px; }
+.owner table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.owner td, .owner th { text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--line); }
+@media (prefers-reduced-motion: reduce) { .bar > span { transition: none; } }
+
+.login { max-width: 420px; margin: 24px auto 0; }
+.field { display: grid; gap: 6px; }
+.field label { font-size: 14px; font-weight: 500; }
+.field input { font: inherit; font-size: 16px; padding: 12px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); }
+.field input:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; }
+.primarybtn { border: none; background: var(--accent); color: var(--accent-ink); border-radius: 10px; padding: 12px 16px; font-size: 16px; font-weight: 600; cursor: pointer; min-height: 48px; }
+.primarybtn:disabled { opacity: .6; cursor: progress; }
+.err { color: var(--bad); font-size: 14px; }
+.ok { color: var(--good); font-size: 14px; }
+body.signedout header .tabs, body.signedout header .progress, body.signedout footer.nav, body.signedout #save { display: none; }
+</style>
+</head>
+<body class="signedout">
+<header class="top">
+  <div class="wrap">
+    <div class="row1">
+      <h1>TORS rationale extraction check</h1>
+      <span id="save" class="save warn">Loading…</span>
+      <button class="iconbtn" id="helpBtn" type="button">How to</button>
+      <button class="iconbtn" id="acctBtn" type="button" hidden>Account</button>
+    </div>
+    <div class="tabs" id="tabs"></div>
+    <div class="progress"><span id="progText">0 / 0 done</span><div class="bar"><span id="progBar"></span></div><button class="iconbtn" id="listBtn" type="button">All</button></div>
+  </div>
+</header>
+
+<main class="wrap" id="main"><div class="card"><div class="hint">Loading…</div></div></main>
+
+<footer class="nav">
+  <div class="wrap">
+    <button type="button" id="prevBtn" aria-label="Previous rationale">‹ Prev</button>
+    <button type="button" id="nextBtn" aria-label="Next rationale">Next ›</button>
+    <button type="button" id="nextOpenBtn" class="primary">Next unfinished</button>
+  </div>
+</footer>
+
+<dialog id="helpDlg"><div class="dlg">
+  <h2>How to check a rationale</h2>
+  <p>Each screen shows one rater's rationale and the criticisms a model pulled out of it. You are checking the extraction against the rationale text only. Do not judge the TORS response, and do not judge whether the rater was clinically right.</p>
+  <ol>
+    <li><b>Is it a criticism stated in the rationale?</b> Yes if the rater actually makes this criticism. No if it is invented, is really praise, or repeats another item.</li>
+    <li><b>Category correct?</b> Tap the category name to see its definition.</li>
+    <li><b>Domain correct?</b> Accuracy, safety or relevance. "Unspecified" is correct when the rater gave no domain.</li>
+    <li><b>Missed criticisms:</b> count criticisms in the rationale that no item captures, and list them in a few words. Enter 0 (None) if nothing was missed. Text that is not highlighted is where missed criticisms hide.</li>
+  </ol>
+  <p>Hedged or minor criticisms count ("slightly optimistic", "minor imprecision"). Statements that something was done appropriately are praise, not criticism.</p>
+  <p>Your answers save automatically and only you can see them. Work independently; do not discuss until both checkers have finished. Start with the Practice set to get used to the task; it is not part of the study sample.</p>
+  <p>On a phone, add this page to your Home Screen (Safari: Share, then Add to Home Screen) to open it like an app.</p>
+  <button class="iconbtn close" type="button" data-close>Got it</button>
+</div></dialog>
+
+<dialog id="defDlg"><div class="dlg">
+  <h2>Category definitions</h2>
+  <dl class="defs" id="defs"></dl>
+  <button class="iconbtn close" type="button" data-close>Close</button>
+</div></dialog>
+
+<dialog id="listDlg"><div class="dlg">
+  <h2 id="listTitle">All rationales</h2>
+  <p class="hint">Green: done. Amber: started. Tap one to open it.</p>
+  <div class="grid" id="grid"></div>
+  <div class="owner" id="ownerBox" hidden></div>
+  <button class="iconbtn close" type="button" data-close>Close</button>
+</div></dialog>
+
+<dialog id="acctDlg"><div class="dlg">
+  <h2>Account</h2>
+  <p id="acctWho" class="hint"></p>
+  <form id="pwForm" class="field" novalidate>
+    <label for="newPw">New password (at least 10 characters)</label>
+    <input id="newPw" type="password" autocomplete="new-password" minlength="10">
+    <label for="newPw2">Repeat new password</label>
+    <input id="newPw2" type="password" autocomplete="new-password" minlength="10">
+    <button class="primarybtn" type="submit" id="pwBtn">Change password</button>
+    <div id="pwMsg" role="status"></div>
+  </form>
+  <button class="iconbtn" type="button" id="signOutBtn">Sign out</button>
+  <button class="iconbtn close" type="button" data-close>Close</button>
+</div></dialog>
+
+<script id="cats" type="application/json">{"factual_error": {"label": "Factual error", "def": "A non-numeric claim is described as wrong (mechanism, indication, recommendation, standard practice)."}, "misattributed_evidence": {"label": "Misattributed evidence", "def": "A trial, guideline, or study is cited for something it did not show, or a rate/finding is attached to the wrong outcome or population (e.g., wrong trial arm or eligibility, wrong citation)."}, "disputed_figure": {"label": "Disputed figure", "def": "A specific number (rate, percentage, duration, length of stay, dose, timeline) is described as wrong, inflated, too specific, or poorly supported. Use this whenever the criticism is about a number, unless the problem is a wrong citation (misattributed_evidence)."}, "overstated_certainty_or_reassurance": {"label": "Overstated certainty or reassurance", "def": "The response is described as more certain, optimistic, or reassuring than the evidence allows: overconfident wording, downplayed risk or severity, overstating what a test, treatment, or finding can show, rule out, or achieve, evidence limitations not acknowledged, or variable/institution-dependent practice presented as universal."}, "omission_key_information": {"label": "Omission of key information", "def": "The response answers the question but leaves out relevant clinical content (other than referral or red-flag guidance)."}, "incomplete_answer": {"label": "Incomplete answer", "def": "A part of the patient's question itself is described as not answered."}, "no_referral_to_care_team": {"label": "No referral to care team", "def": "The response is described as not advising the patient to consult or discuss with their physician or care team."}, "missing_red_flags_or_emergency_guidance": {"label": "Missing red flags or emergency guidance", "def": "Missing warning signs, when to seek urgent care, or what to do if a complication (e.g., bleeding, aspiration) occurs."}, "unsafe_or_inappropriate_advice": {"label": "Unsafe or inappropriate advice", "def": "Advice described as potentially harmful, premature, or inappropriate to act on."}, "misleading_framing_or_terminology": {"label": "Misleading framing or terminology", "def": "Confusing, imprecise, misleading, or non-standard wording or framing."}, "off_topic_or_unnecessary": {"label": "Off-topic or unnecessary", "def": "Content described as irrelevant, excessive, or extra (including unnecessary sections or a trailing follow-up question)."}, "presentation_or_formatting": {"label": "Presentation or formatting", "def": "Structure, formatting, truncation, or readability problems."}, "other": {"label": "Other", "def": "A critique that fits none of the above (give a short label)."}}</script>
+<script src="config.js"></script>
+<script src="vendor/supabase-2.118.0.js"></script>
+<script>
+(function () {
+  "use strict";
+  var CATS = JSON.parse(document.getElementById("cats").textContent);
+  var DATA_VERSION = "v3-34d5d9b8ab81";
+  var DOMAIN_LABEL = { accuracy: "Accuracy", safety: "Safety", relevance: "Relevance", unspecified: "Domain unspecified" };
+  var CFG = window.TORS_CONFIG || {};
+
+  var DATA = { datasets: [] };
+  var st = { ds: null, idx: 0, showQ: false, answers: {}, uid: null, email: "", role: null,
+             mode: "loading", ownerRows: null };
+  var sb = null;
+
+  function $(id) { return document.getElementById(id); }
+  function el(tag, attrs, kids) {
+    var n = document.createElement(tag);
+    if (attrs) Object.keys(attrs).forEach(function (k) {
+      if (k === "class") n.className = attrs[k];
+      else if (k === "text") n.textContent = attrs[k];
+      else if (k.slice(0, 2) === "on") n.addEventListener(k.slice(2), attrs[k]);
+      else if (attrs[k] !== null && attrs[k] !== undefined && attrs[k] !== false) n.setAttribute(k, attrs[k]);
+    });
+    (kids || []).forEach(function (c) { if (c) n.appendChild(typeof c === "string" ? document.createTextNode(c) : c); });
+    return n;
+  }
+  function lsGet(k) { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch (e) { return null; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  function dataset() { return DATA.datasets.filter(function (d) { return d.id === st.ds; })[0]; }
+  function rec() { return dataset().records[st.idx]; }
+  function ans(vid) {
+    var a = st.answers[st.ds][vid];
+    if (!a) { a = { items: {}, n_missed: null, missed: "" }; st.answers[st.ds][vid] = a; }
+    return a;
+  }
+
+  // ---------- completeness ----------
+  function status(r, a) {
+    if (!a) return "none";
+    var touched = a.n_missed !== null || (a.missed || "") !== "" || Object.keys(a.items || {}).length > 0;
+    var ok = r.items.every(function (it) {
+      var x = (a.items || {})[it.n] || {};
+      if (x.real === 0) return true;
+      return x.real === 1 && (x.cat === 0 || x.cat === 1) && (x.dom === 0 || x.dom === 1);
+    });
+    ok = ok && a.n_missed !== null && a.n_missed !== undefined && (a.n_missed === 0 || (a.missed || "").trim() !== "");
+    return ok ? "done" : (touched ? "part" : "none");
+  }
+  function counts(dsId) {
+    var d = DATA.datasets.filter(function (x) { return x.id === dsId; })[0];
+    var done = 0;
+    d.records.forEach(function (r) { if (status(r, st.answers[dsId][r.vid]) === "done") done++; });
+    return { done: done, total: d.records.length };
+  }
+
+  // ---------- highlighting ----------
+  function normWithMap(s) {
+    var out = "", map = [], prevSpace = false;
+    var rep = { "“": '"', "”": '"', "‘": "'", "’": "'", "–": "-", "—": "-" };
+    for (var i = 0; i < s.length; i++) {
+      var ch = s[i];
+      if (/\s/.test(ch)) { if (prevSpace) continue; ch = " "; prevSpace = true; } else prevSpace = false;
+      ch = (rep[ch] || ch).toLowerCase();
+      out += ch; map.push(i);
+    }
+    return { s: out, map: map };
+  }
+  function spans(text, items) {
+    var n = normWithMap(text), found = [];
+    items.forEach(function (it) {
+      var q = normWithMap((it.quote || "").trim()).s;
+      if (!q) return;
+      var at = n.s.indexOf(q);
+      if (at < 0) return;
+      found.push({ start: n.map[at], end: n.map[at + q.length - 1] + 1, n: it.n });
+    });
+    found.sort(function (a, b) { return a.start - b.start || b.end - a.end; });
+    var kept = [], last = -1;
+    found.forEach(function (f) { if (f.start >= last) { kept.push(f); last = f.end; } });
+    return kept;
+  }
+  function renderRationale(r) {
+    var box = el("div", { class: "rationale" });
+    var sp = spans(r.rationale, r.items), pos = 0;
+    sp.forEach(function (f) {
+      if (f.start > pos) box.appendChild(document.createTextNode(r.rationale.slice(pos, f.start)));
+      box.appendChild(el("mark", { class: "h" + (((f.n - 1) % 6) + 1) }, [r.rationale.slice(f.start, f.end), el("sup", { text: String(f.n) })]));
+      pos = f.end;
+    });
+    if (pos < r.rationale.length) box.appendChild(document.createTextNode(r.rationale.slice(pos)));
+    return box;
+  }
+
+  // ---------- rendering ----------
+  function ynRow(label, value, onPick) {
+    function b(v, txt, cls) {
+      return el("button", { type: "button", class: cls, "aria-pressed": value === v ? "true" : "false",
+        disabled: st.mode === "readonly" ? "" : null,
+        onclick: function () { onPick(value === v ? null : v); } }, [txt]);
+    }
+    return el("div", { class: "qrow" }, [el("div", { class: "qtext", text: label }), el("div", { class: "yn" }, [b(1, "Yes", "yes"), b(0, "No", "no")])]);
+  }
+
+  function renderMessage(title, text, actions) {
+    document.body.classList.add("signedout");
+    var main = $("main"); main.textContent = "";
+    main.appendChild(el("section", { class: "card login" }, [el("h2", { text: title, style: "margin:0;font-size:18px" }), el("p", { text: text, style: "margin:0" })].concat(actions || [])));
+    renderSave();
+  }
+
+  function render() {
+    if (!DATA.datasets.length || !st.ds) return;
+    document.body.classList.remove("signedout");
+    var d = dataset(), r = rec(), a = st.answers[st.ds][r.vid];
+    var tabs = $("tabs"); tabs.textContent = "";
+    DATA.datasets.forEach(function (x) {
+      var c = counts(x.id);
+      tabs.appendChild(el("button", { type: "button", class: "tab", "aria-pressed": x.id === st.ds ? "true" : "false",
+        onclick: function () { if (st.ds !== x.id) { st.ds = x.id; st.idx = firstOpen(); st.showQ = false; go(); } } },
+        [x.title + " · " + c.done + "/" + c.total]));
+    });
+    updateCounts();
+
+    var main = $("main"); main.textContent = "";
+    if (st.mode === "readonly") main.appendChild(el("div", { class: "banner", text: "Your account can read but not save answers. Ask the study owner to add you as a checker." }));
+    if (saveError) main.appendChild(el("div", { class: "banner", text: "Your last answers haven't reached the server yet. They are kept on this device and will be sent automatically when the connection returns." }));
+    if (d.note) main.appendChild(el("div", { class: "banner info", text: d.note }));
+
+    var s = status(r, a);
+    var chip = el("span", { class: "chip" + (s === "done" ? " done" : s === "part" ? " part" : ""), text: s === "done" ? "Done" : s === "part" ? "In progress" : "Not started" });
+    var q = el("div", { class: "question" + (st.showQ ? "" : " clamp"), text: r.question });
+    var qBtn = el("button", { type: "button", class: "linkbtn", onclick: function () { st.showQ = !st.showQ; render(); } }, [st.showQ ? "Show less" : "Show full question"]);
+    main.appendChild(el("section", { class: "card", "aria-label": "Rationale" }, [
+      el("div", { class: "idrow" }, [el("span", { class: "vid", text: r.vid }), chip, el("span", { class: "hint", text: (st.idx + 1) + " of " + d.records.length })]),
+      el("div", { class: "label", text: "Patient question" }), q, r.question.length > 160 ? qBtn : null,
+      el("div", { class: "label", text: "Rater's rationale" }), renderRationale(r),
+      r.items.length ? el("div", { class: "hint", text: "Highlights show the text each numbered item was taken from." }) : null
+    ]));
+
+    if (!r.items.length) {
+      main.appendChild(el("section", { class: "card" }, [el("div", { class: "label", text: "Extracted criticisms" }), el("div", { text: "No criticisms were extracted from this rationale." })]));
+    }
+    r.items.forEach(function (it) {
+      var x = ans(r.vid).items[it.n] || {};
+      function setv(k, v) {
+        var A = ans(r.vid); var cur = A.items[it.n] = Object.assign({}, A.items[it.n] || {});
+        cur[k] = v;
+        if (v === null) delete cur[k];
+        if (k === "real" && v !== 1) { delete cur.cat; delete cur.dom; }
+        changed(r.vid);
+      }
+      var cat = CATS[it.category] || { label: it.category, def: "" };
+      var notReal = x.real !== 1;
+      main.appendChild(el("section", { class: "card item c" + (((it.n - 1) % 6) + 1), "aria-label": "Item " + it.n }, [
+        el("div", { class: "itemhead" }, [
+          el("span", { class: "num", text: "Item " + it.n }),
+          el("button", { type: "button", class: "catbtn", onclick: function () { openDefs(it.category); } }, [cat.label + " ⓘ"]),
+          el("span", { class: "chip", text: DOMAIN_LABEL[it.domain] || it.domain })
+        ]),
+        el("div", { class: "critique", text: it.critique }),
+        el("div", { class: "quote", text: "“" + it.quote + "”" }),
+        ynRow("Is this a criticism stated in the rationale?", x.real, function (v) { setv("real", v); }),
+        notReal ? el("div", { class: "na", text: x.real === 0 ? "Category and domain are skipped for items that are not real criticisms." : "Answer the first question to check category and domain." }) : null,
+        notReal ? null : ynRow("Is the category correct?", x.cat, function (v) { setv("cat", v); }),
+        notReal ? null : ynRow("Is the domain correct?", x.dom, function (v) { setv("dom", v); })
+      ]));
+    });
+
+    var A = ans(r.vid), nm = A.n_missed;
+    var ta = el("textarea", { id: "missedText", placeholder: "One per line, a few words each", "aria-label": "Missed criticisms" });
+    ta.value = A.missed || "";
+    if (st.mode === "readonly") ta.setAttribute("disabled", "");
+    ta.addEventListener("input", function () { ans(r.vid).missed = ta.value; changed(r.vid, true); });
+    ta.addEventListener("blur", function () { setTimeout(render, 250); });
+    var ro = st.mode === "readonly" ? "" : null;
+    main.appendChild(el("section", { class: "card", "aria-label": "Missed criticisms" }, [
+      el("div", { class: "label", text: "Missed criticisms" }),
+      el("div", { class: "qtext", text: r.items.length ? "How many criticisms in the rationale are not captured by any item above?" : "Does the rationale contain any criticism? If so, how many?" }),
+      el("div", { class: "stepper" }, [
+        el("button", { type: "button", class: "none", disabled: ro, "aria-pressed": nm === 0 ? "true" : "false", onclick: function () { ans(r.vid).n_missed = 0; changed(r.vid); } }, ["None"]),
+        el("button", { type: "button", disabled: ro, "aria-label": "One fewer", onclick: function () { var v = ans(r.vid).n_missed; ans(r.vid).n_missed = Math.max(0, (v || 0) - 1); changed(r.vid); } }, ["−"]),
+        el("span", { class: "count", text: nm === null || nm === undefined ? "–" : String(nm) }),
+        el("button", { type: "button", disabled: ro, "aria-label": "One more", onclick: function () { var v = ans(r.vid).n_missed; ans(r.vid).n_missed = (v || 0) + 1; changed(r.vid); } }, ["+"])
+      ]),
+      nm > 0 ? ta : null,
+      nm > 0 && !(A.missed || "").trim() ? el("div", { class: "need", text: "List the missed criticisms to finish this rationale." }) : null,
+      nm === null || nm === undefined ? el("div", { class: "need", text: "Tap None if nothing was missed." }) : null
+    ]));
+
+    $("prevBtn").disabled = st.idx === 0;
+    $("nextBtn").disabled = st.idx === d.records.length - 1;
+    var open = nextOpen();
+    $("nextOpenBtn").textContent = open === -1 ? "All done" : "Next unfinished";
+    $("nextOpenBtn").disabled = open === -1;
+    renderSave();
+  }
+
+  function updateCounts() {
+    if (!st.ds) return;
+    var c = counts(st.ds);
+    $("progText").textContent = c.done + " / " + c.total + " done";
+    $("progBar").style.width = (c.total ? 100 * c.done / c.total : 0) + "%";
+  }
+
+  function renderSave() {
+    var s = $("save");
+    var pending = Object.keys(dirty).length + (writing ? 1 : 0);
+    s.className = "save";
+    if (st.mode === "loading") { s.textContent = "Loading…"; s.className = "save warn"; }
+    else if (st.mode === "readonly") { s.textContent = "View only"; s.className = "save bad"; }
+    else if (saveError) { s.textContent = "Not saved yet"; s.className = "save bad"; }
+    else if (pending) { s.textContent = "Saving…"; s.className = "save warn"; }
+    else s.textContent = "Saved";
+  }
+
+  // ---------- navigation ----------
+  function firstOpen() {
+    var recs = dataset().records;
+    for (var i = 0; i < recs.length; i++) if (status(recs[i], st.answers[st.ds][recs[i].vid]) !== "done") return i;
+    return 0;
+  }
+  function nextOpen() {
+    var recs = dataset().records, n = recs.length;
+    for (var k = 1; k <= n; k++) { var i = (st.idx + k) % n; if (status(recs[i], st.answers[st.ds][recs[i].vid]) !== "done") return i; }
+    return status(rec(), st.answers[st.ds][rec().vid]) === "done" ? -1 : st.idx;
+  }
+  function go() {
+    try { history.replaceState(null, "", "#" + st.ds + "-" + rec().vid); } catch (e) {}
+    lsSet("torsval-pos", st.ds + "-" + rec().vid);
+    render(); window.scrollTo(0, 0);
+  }
+  function fromHash(h) {
+    var m = /^#?([a-z]+)-([A-Z]\d+)$/.exec(h || "");
+    if (!m) return false;
+    var d = DATA.datasets.filter(function (x) { return x.id === m[1]; })[0];
+    if (!d) return false;
+    var i = d.records.map(function (r) { return r.vid; }).indexOf(m[2]);
+    if (i < 0) return false;
+    st.ds = d.id; st.idx = i; return true;
+  }
+  $("prevBtn").onclick = function () { if (st.idx > 0) { st.idx--; st.showQ = false; go(); } };
+  $("nextBtn").onclick = function () { if (st.idx < dataset().records.length - 1) { st.idx++; st.showQ = false; go(); } };
+  $("nextOpenBtn").onclick = function () { var i = nextOpen(); if (i >= 0) { st.idx = i; st.showQ = false; go(); } };
+  window.addEventListener("hashchange", function () { if (DATA.datasets.length && fromHash(location.hash)) render(); });
+
+  // ---------- dialogs ----------
+  function openDlg(id) { var d = $(id); try { d.showModal(); } catch (e) { d.setAttribute("open", ""); } }
+  function closeDlg(d) { try { d.close(); } catch (e) { d.removeAttribute("open"); } }
+  document.querySelectorAll("[data-close]").forEach(function (b) { b.addEventListener("click", function () { closeDlg(b.closest("dialog")); }); });
+  $("helpBtn").onclick = function () { openDlg("helpDlg"); };
+  function openDefs(focusKey) {
+    var dl = $("defs"); dl.textContent = "";
+    Object.keys(CATS).forEach(function (k) {
+      var dt = el("dt", { text: CATS[k].label, id: "def-" + k });
+      if (k === focusKey) dt.style.color = "var(--accent)";
+      dl.appendChild(dt); dl.appendChild(el("dd", { text: CATS[k].def }));
+    });
+    openDlg("defDlg");
+    var t = document.getElementById("def-" + focusKey); if (t) t.scrollIntoView({ block: "center" });
+  }
+  $("listBtn").onclick = function () {
+    if (!st.ds) return;
+    var g = $("grid"); g.textContent = "";
+    $("listTitle").textContent = dataset().title + ": all rationales";
+    dataset().records.forEach(function (r, i) {
+      var s = status(r, st.answers[st.ds][r.vid]);
+      g.appendChild(el("button", { type: "button", class: (s === "done" ? "done" : s === "part" ? "part" : "") + (i === st.idx ? " cur" : ""),
+        onclick: function () { st.idx = i; st.showQ = false; closeDlg($("listDlg")); go(); } }, [r.vid]));
+    });
+    renderOwner();
+    openDlg("listDlg");
+    if (st.role === "owner") loadOwner();
+  };
+  $("acctBtn").onclick = function () { $("acctWho").textContent = "Signed in as " + st.email; $("pwMsg").textContent = ""; openDlg("acctDlg"); };
+  $("signOutBtn").onclick = function () {
+    if (Object.keys(dirty).length && !window.confirmSignOut) {
+      $("pwMsg").className = "err";
+      $("pwMsg").textContent = "Some answers haven't been saved yet. Wait for 'Saved', or tap Sign out again to sign out anyway (unsaved answers stay on this device).";
+      window.confirmSignOut = true; return;
+    }
+    sb.auth.signOut().then(function () { location.hash = ""; location.reload(); });
+  };
+  $("pwForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var p1 = $("newPw").value, p2 = $("newPw2").value, msg = $("pwMsg");
+    msg.className = "err";
+    if (p1.length < 10) { msg.textContent = "Use at least 10 characters."; return; }
+    if (p1 !== p2) { msg.textContent = "The two passwords don't match."; return; }
+    $("pwBtn").disabled = true;
+    sb.auth.updateUser({ password: p1 }).then(function (res) {
+      $("pwBtn").disabled = false;
+      if (res.error) { msg.textContent = "Couldn't change the password: " + res.error.message; return; }
+      msg.className = "ok"; msg.textContent = "Password changed."; $("newPw").value = ""; $("newPw2").value = "";
+    });
+  });
+
+  // ---------- owner overview ----------
+  function renderOwner() {
+    var box = $("ownerBox");
+    if (!st.ownerRows) { box.hidden = true; return; }
+    box.hidden = false; box.textContent = "";
+    box.appendChild(el("div", { class: "label", text: "Checker progress (owner only)" }));
+    var head = el("tr", null, [el("th", { text: "Checker" })].concat(DATA.datasets.map(function (d) { return el("th", { text: d.title }); })));
+    var t = el("table", null, [head]);
+    var by = {};
+    st.ownerRows.forEach(function (r) { var k = r.display_name || r.email || "Unknown"; (by[k] = by[k] || {})[r.dataset] = r.done; });
+    Object.keys(by).forEach(function (name) {
+      t.appendChild(el("tr", null, [el("td", { text: name })].concat(DATA.datasets.map(function (d) {
+        return el("td", { text: (by[name][d.id] || 0) + " / " + d.records.length });
+      }))));
+    });
+    if (!Object.keys(by).length) t.appendChild(el("tr", null, [el("td", { text: "No checker has started yet." })]));
+    box.appendChild(t);
+  }
+  function loadOwner() {
+    sb.from("progress").select("display_name,email,dataset,done").then(function (res) {
+      if (!res.error) { st.ownerRows = res.data || []; renderOwner(); }
+    });
+  }
+
+  // ---------- saving ----------
+  // dirty: answers changed on this device and not yet confirmed by the server.
+  // Kept in localStorage so a reload, a lost connection or a closed tab loses nothing.
+  var dirty = {}, writing = false, saveError = false, timer = null, retryMs = 2000;
+  function localKey() { return "torsval-" + st.uid; }
+  function persistLocal() { if (st.uid) lsSet(localKey(), { answers: st.answers, dirty: dirty }); }
+  function changed(vid, noRender) {
+    if (st.mode === "readonly") return;
+    dirty[st.ds + "|" + vid] = true;
+    persistLocal();
+    if (!noRender) render(); else { renderSave(); updateCounts(); }
+    clearTimeout(timer); timer = setTimeout(flush, 700);
+  }
+  function row(dsId, vid) {
+    var d = DATA.datasets.filter(function (x) { return x.id === dsId; })[0];
+    var r = d && d.records.filter(function (x) { return x.vid === vid; })[0];
+    var a = st.answers[dsId][vid] || { items: {}, n_missed: null, missed: "" };
+    return { user_id: st.uid, dataset: dsId, vid: vid, items: a.items || {},
+             n_missed: (a.n_missed === undefined ? null : a.n_missed), missed: a.missed || "",
+             complete: r ? status(r, a) === "done" : false, data_version: DATA_VERSION };
+  }
+  function flush() {
+    if (st.mode !== "ready" || writing) { renderSave(); return; }
+    var keys = Object.keys(dirty);
+    if (!keys.length) { renderSave(); return; }
+    var k = keys[0], p = k.split("|");
+    writing = true; renderSave();
+    sb.from("answers").upsert(row(p[0], p[1]), { onConflict: "user_id,dataset,vid" }).then(function (res) {
+      writing = false;
+      if (res.error) return failed(res.error);
+      delete dirty[k]; persistLocal();
+      if (saveError) { saveError = false; render(); }
+      retryMs = 2000; renderSave(); flush();
+    }, function (err) { writing = false; failed(err); });
+  }
+  function failed(err) {
+    var code = err && err.code;
+    if (code === "42501") { st.mode = "readonly"; render(); return; }       // not allowed (not on checker list)
+    if (!saveError) { saveError = true; render(); } else renderSave();
+    clearTimeout(timer); timer = setTimeout(flush, retryMs);
+    retryMs = Math.min(retryMs * 2, 60000);
+  }
+  window.addEventListener("online", function () { retryMs = 2000; flush(); });
+  window.addEventListener("pagehide", persistLocal);
+
+  // ---------- sign in ----------
+  function showLogin(message) {
+    document.body.classList.add("signedout");
+    $("acctBtn").hidden = true;
+    st.mode = "signedout";
+    $("save").textContent = "";
+    var main = $("main"); main.textContent = "";
+    var email = el("input", { id: "email", type: "email", autocomplete: "username", inputmode: "email", required: "" });
+    var pw = el("input", { id: "pw", type: "password", autocomplete: "current-password", required: "" });
+    var msg = el("div", { class: "err", role: "status", text: message || "" });
+    var btn = el("button", { class: "primarybtn", type: "submit" }, ["Sign in"]);
+    var form = el("form", { class: "card login", novalidate: "" }, [
+      el("h2", { text: "Sign in", style: "margin:0;font-size:18px" }),
+      el("p", { class: "hint", text: "Use the email and password the study owner gave you.", style: "margin:0" }),
+      el("div", { class: "field" }, [el("label", { for: "email", text: "Email" }), email]),
+      el("div", { class: "field" }, [el("label", { for: "pw", text: "Password" }), pw]),
+      btn, msg
+    ]);
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      if (!email.value || !pw.value) { msg.textContent = "Enter your email and password."; return; }
+      btn.disabled = true; msg.textContent = "";
+      sb.auth.signInWithPassword({ email: email.value.trim(), password: pw.value }).then(function (res) {
+        btn.disabled = false;
+        if (res.error) {
+          msg.textContent = /invalid/i.test(res.error.message) ? "Email or password is incorrect." : "Couldn't sign in: " + res.error.message;
+          return;
+        }
+        start(res.data.session);
+      }, function () { btn.disabled = false; msg.textContent = "Couldn't reach the server. Check your connection and try again."; });
+    });
+    main.appendChild(form);
+    setTimeout(function () { email.focus(); }, 50);
+  }
+
+  function start(session) {
+    st.uid = session.user.id; st.email = session.user.email || "";
+    st.mode = "loading"; renderSave();
+    $("acctBtn").hidden = false;
+    $("main").textContent = ""; $("main").appendChild(el("div", { class: "card" }, [el("div", { class: "hint", text: "Loading rationales…" })]));
+    Promise.all([
+      sb.from("checkers").select("role,display_name").eq("user_id", st.uid).maybeSingle(),
+      sb.from("datasets").select("id,title,note,sort").order("sort"),
+      sb.from("records").select("dataset,vid,question,rationale,items").order("dataset").order("vid"),
+      sb.from("answers").select("dataset,vid,items,n_missed,missed").eq("user_id", st.uid)
+    ]).then(function (res) {
+      var bad = res.filter(function (x) { return x.error; })[0];
+      if (bad) { renderMessage("Couldn't load the data", "The server answered with an error: " + bad.error.message + ". Try again in a minute.", [el("button", { class: "primarybtn", type: "button", onclick: function () { location.reload(); } }, ["Try again"])]); return; }
+      if (!res[0].data) {
+        renderMessage("Not on the checker list", "You're signed in as " + st.email + ", but this account hasn't been added as a checker. Ask the study owner to add you.",
+          [el("button", { class: "iconbtn", type: "button", onclick: function () { sb.auth.signOut().then(function () { location.reload(); }); } }, ["Sign out"])]);
+        return;
+      }
+      st.role = res[0].data.role;
+      DATA.datasets = res[1].data.map(function (d) { return { id: d.id, title: d.title, note: d.note, records: [] }; });
+      res[2].data.forEach(function (r) {
+        var d = DATA.datasets.filter(function (x) { return x.id === r.dataset; })[0];
+        if (d) d.records.push({ vid: r.vid, question: r.question, rationale: r.rationale, items: r.items || [] });
+      });
+      DATA.datasets = DATA.datasets.filter(function (d) { return d.records.length; });
+      if (!DATA.datasets.length) { renderMessage("Nothing to check yet", "No rationales have been loaded. Ask the study owner to upload them.", []); return; }
+      DATA.datasets.forEach(function (d) { st.answers[d.id] = {}; });
+      res[3].data.forEach(function (a) {
+        if (st.answers[a.dataset]) st.answers[a.dataset][a.vid] = { items: a.items || {}, n_missed: a.n_missed, missed: a.missed || "" };
+      });
+      // answers changed on this device but not yet confirmed by the server win, and are re-sent
+      var local = lsGet(localKey());
+      if (local && local.dirty) Object.keys(local.dirty).forEach(function (k) {
+        var p = k.split("|");
+        if (st.answers[p[0]] && local.answers && local.answers[p[0]] && local.answers[p[0]][p[1]]) {
+          st.answers[p[0]][p[1]] = local.answers[p[0]][p[1]]; dirty[k] = true;
+        }
+      });
+      st.mode = "ready";
+      st.ds = DATA.datasets[0].id;
+      if (!fromHash(location.hash) && !fromHash("#" + (lsGet("torsval-pos") || ""))) st.idx = firstOpen();
+      persistLocal(); go(); flush();
+      if (!lsGet("torsval-help")) { openDlg("helpDlg"); lsSet("torsval-help", 1); }
+    }, function () {
+      renderMessage("Couldn't reach the server", "Check your connection and try again.", [el("button", { class: "primarybtn", type: "button", onclick: function () { location.reload(); } }, ["Try again"])]);
+    });
+  }
+
+  // ---------- boot ----------
+  if (!CFG.url || !CFG.anonKey || /YOUR_/.test(CFG.url + CFG.anonKey)) {
+    renderMessage("Setup not finished", "config.js still has placeholder values. Add the Supabase Project URL and anon key (see SETUP.md).", []);
+    return;
+  }
+  if (!window.supabase || !window.supabase.createClient) {
+    renderMessage("Couldn't load the page", "A required file (vendor/supabase-2.118.0.js) didn't load. Reload the page.", []);
+    return;
+  }
+  sb = window.supabase.createClient(CFG.url, CFG.anonKey, { auth: { persistSession: true, autoRefreshToken: true, storageKey: "torsval-auth" } });
+  sb.auth.getSession().then(function (res) {
+    var session = res.data && res.data.session;
+    if (session) start(session); else showLogin();
+  }, function () { showLogin(); });
+  sb.auth.onAuthStateChange(function (event) {
+    if (event === "SIGNED_OUT" && st.mode !== "signedout") { persistLocal(); showLogin("You were signed out. Sign in again to continue; unsaved answers are kept on this device."); }
+  });
+})();
+</script>
+</body>
+</html>
